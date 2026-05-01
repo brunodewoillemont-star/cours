@@ -9,7 +9,6 @@ const client = new OpenAI({
 });
 const MODEL = "llama-3.3-70b-versatile";
 
-// Programme officiel Terminale Générale
 export const CHAPITRES = {
   tronc_commun: [
     "Suites numériques",
@@ -31,90 +30,79 @@ export const CHAPITRES = {
   ],
 };
 
-const SYSTEM_PROMPT = `Tu es un professeur de mathématiques de classe préparatoire qui rédige des sujets de Baccalauréat Terminale Générale pour des élèves de l'option Mathématiques Expertes.
-Tes exercices sont RIGOUREUX, COHÉRENTS mathématiquement et conformes au programme officiel.
-Règles absolues :
-- Les énoncés sont clairs, précis, sans ambiguïté, comme dans un vrai sujet du Bac.
-- Les calculs et résultats dans les corrections sont EXACTS et vérifiés.
-- Chaque question s'appuie logiquement sur la précédente (les résultats des parties précédentes sont réutilisés).
-- Le barème est réaliste (total cohérent avec la difficulté).
-- Réponds UNIQUEMENT avec un objet JSON valide, rien avant ni après.`;
+const SYSTEM_PROMPT = `Tu es un professeur de mathématiques expert qui rédige des exercices de Baccalauréat Terminale Générale option Mathématiques Expertes.
+Règles ABSOLUES :
+- Énoncés rigoureux, précis et conformes au programme officiel.
+- Calculs et résultats EXACTS dans les corrections.
+- Les questions s'enchaînent logiquement.
+- Réponds UNIQUEMENT avec un objet JSON valide, rien avant ni après, pas de balises markdown.`;
 
-const SCHEMA_EXERCICE = `{
+// Schéma simplifié — questions à plat (pas de sous_questions imbriquées)
+const SCHEMA = `{
   "titre": "Titre de l'exercice",
-  "chapitre": "Chapitre concerné",
+  "chapitre": "Chapitre",
   "difficulte": "Facile|Moyen|Difficile|Style Bac",
-  "duree_estimee": "XX minutes",
+  "duree_estimee": "20 minutes",
   "points_total": 7,
-  "notions": ["notion 1", "notion 2", "notion 3"],
-  "contexte": "Mise en contexte de l'exercice (optionnel, comme dans les vrais sujets)",
+  "notions": ["notion 1", "notion 2"],
   "exercices": [
     {
       "numero": "Exercice 1",
-      "titre": "Titre optionnel",
+      "titre": "Titre",
       "points": 7,
-      "enonce_intro": "Introduction générale de l'exercice si nécessaire",
+      "enonce_intro": "Contexte ou introduction de l'exercice.",
       "questions": [
-        {
-          "numero": "1.",
-          "enonce": "Énoncé complet de la question, précis et rigoureux.",
-          "points": 2,
-          "sous_questions": []
-        },
-        {
-          "numero": "2.",
-          "enonce": "...",
-          "points": 3,
-          "sous_questions": [
-            {"numero": "a.", "enonce": "...", "points": 1},
-            {"numero": "b.", "enonce": "...", "points": 2}
-          ]
-        }
+        {"numero": "1.", "enonce": "Énoncé de la question.", "points": 2},
+        {"numero": "2. a.", "enonce": "Énoncé de la sous-question.", "points": 1},
+        {"numero": "2. b.", "enonce": "Énoncé de la sous-question.", "points": 2}
       ],
       "correction": [
-        {
-          "numero": "1.",
-          "solution": "Solution complète, rédigée, avec tous les calculs intermédiaires justifiés.",
-          "methode": "Conseil méthodologique pour cette question."
-        },
-        {
-          "numero": "2.a.",
-          "solution": "...",
-          "methode": "..."
-        }
+        {"numero": "1.", "solution": "Solution complète avec tous les calculs détaillés.", "methode": "Conseil méthodologique."},
+        {"numero": "2. a.", "solution": "Solution complète.", "methode": ""},
+        {"numero": "2. b.", "solution": "Solution complète.", "methode": ""}
       ]
     }
   ]
 }`;
 
-const SCHEMA_SUJET_COMPLET = `{
-  "titre": "Sujet de Baccalauréat - Mathématiques Terminale Générale",
+const SCHEMA_SUJET = `{
+  "titre": "Sujet Baccalauréat — Mathématiques Terminale Générale",
   "difficulte": "Style Bac",
   "duree_estimee": "3 heures",
   "points_total": 20,
-  "notions": ["liste des notions abordées"],
+  "notions": ["notion 1", "notion 2", "notion 3"],
   "exercices": [
     {
       "numero": "Exercice 1",
-      "titre": "Titre de l'exercice",
+      "titre": "Titre",
       "points": 6,
-      "enonce_intro": "...",
-      "questions": [...],
-      "correction": [...]
+      "enonce_intro": "Contexte.",
+      "questions": [
+        {"numero": "1.", "enonce": "...", "points": 2},
+        {"numero": "2.", "enonce": "...", "points": 2},
+        {"numero": "3.", "enonce": "...", "points": 2}
+      ],
+      "correction": [
+        {"numero": "1.", "solution": "...", "methode": "..."},
+        {"numero": "2.", "solution": "...", "methode": "..."},
+        {"numero": "3.", "solution": "...", "methode": "..."}
+      ]
     },
     {
       "numero": "Exercice 2",
-      "titre": "...",
+      "titre": "Titre",
       "points": 7,
-      "questions": [...],
-      "correction": [...]
+      "enonce_intro": "Contexte.",
+      "questions": [{"numero": "1.", "enonce": "...", "points": 2}],
+      "correction": [{"numero": "1.", "solution": "...", "methode": "..."}]
     },
     {
       "numero": "Exercice 3",
-      "titre": "...",
+      "titre": "Titre",
       "points": 7,
-      "questions": [...],
-      "correction": [...]
+      "enonce_intro": "Contexte.",
+      "questions": [{"numero": "1.", "enonce": "...", "points": 2}],
+      "correction": [{"numero": "1.", "solution": "...", "methode": "..."}]
     }
   ]
 }`;
@@ -129,26 +117,26 @@ function extractJSON(text) {
 }
 
 async function genererExercice({ chapitre, difficulte, type }) {
-  const isSujetComplet = type === "sujet_complet";
+  const isSujet = type === "sujet_complet";
 
-  const prompt = isSujetComplet
+  const userPrompt = isSujet
     ? `Génère un sujet complet de Baccalauréat Terminale Générale option Mathématiques Expertes.
-Le sujet doit comporter 3 exercices indépendants couvrant des chapitres variés du programme (tronc commun + expertes).
-Total : 20 points. Durée : 3h. Niveau : conforme aux vrais sujets du Bac.
-Génère le sujet au format JSON strict :\n${SCHEMA_SUJET_COMPLET}`
-    : `Génère un exercice de Baccalauréat Terminale Générale option Mathématiques Expertes.
+3 exercices indépendants couvrant des chapitres variés. Total 20 pts. Niveau conforme au vrai Bac.
+Chaque exercice doit avoir 3 à 4 questions avec corrections complètes.
+Réponds UNIQUEMENT avec ce JSON (pas de texte autour) :\n${SCHEMA_SUJET}`
+    : `Génère un exercice de Terminale Générale option Mathématiques Expertes.
 Chapitre : ${chapitre}
 Difficulté : ${difficulte}
-L'exercice doit comporter 3 à 5 questions progressives (certaines avec sous-questions a, b, c).
-Les questions doivent s'enchaîner logiquement, les résultats des premières questions étant réutilisés ensuite.
-Génère l'exercice au format JSON strict :\n${SCHEMA_EXERCICE}`;
+4 à 5 questions progressives avec corrections détaillées.
+Les questions doivent s'enchaîner logiquement (résultats réutilisés).
+Réponds UNIQUEMENT avec ce JSON (pas de texte autour) :\n${SCHEMA}`;
 
   const response = await client.chat.completions.create({
     model: MODEL,
-    max_tokens: 6000,
+    max_tokens: isSujet ? 7000 : 4000,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: prompt },
+      { role: "user", content: userPrompt },
     ],
   });
 
