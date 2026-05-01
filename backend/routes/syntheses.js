@@ -42,7 +42,8 @@ const upload = multer({
 
 const SYSTEM_PROMPT = `Tu es un assistant pédagogique expert qui aide des lycéens à synthétiser leurs cours.
 Tu analyses le contenu d'un cours et tu produis une synthèse structurée, claire et facile à mémoriser.
-Tu réponds TOUJOURS avec un objet JSON valide. Tu peux l'entourer de \`\`\`json si tu veux, mais rien d'autre.`;
+Tu réponds TOUJOURS avec UNIQUEMENT un objet JSON valide, rien d'autre avant ou après.
+N'inclus JAMAIS le contenu brut du cours dans ta réponse JSON. Synthétise uniquement.`;
 
 // Extrait le JSON de la réponse même s'il est entouré de balises markdown
 function extractJSON(text) {
@@ -93,14 +94,19 @@ async function genererSynthese(contenu, typeSource, fichierPath, mimetype) {
       ],
     });
   } else {
+    // Limite le cours à 6000 caractères pour éviter de dépasser le contexte
+    const contenuTronque = contenu.length > 6000
+      ? contenu.slice(0, 6000) + "\n[... cours tronqué pour la synthèse ...]"
+      : contenu;
+
     response = await client.chat.completions.create({
       model: MODEL_TEXTE,
-      max_tokens: 2000,
+      max_tokens: 3000,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
           role: "user",
-          content: `Voici le contenu d'un cours à synthétiser :\n\n<cours>\n${contenu}\n</cours>\n\nGénère une synthèse au format JSON strict :\n${JSON_SCHEMA}`,
+          content: `Voici le contenu d'un cours à synthétiser :\n\n<cours>\n${contenuTronque}\n</cours>\n\nGénère une synthèse au format JSON strict. Réponds avec SEULEMENT ce JSON, sans texte autour :\n${JSON_SCHEMA}`,
         },
       ],
     });
