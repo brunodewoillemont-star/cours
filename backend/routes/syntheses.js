@@ -166,7 +166,7 @@ router.post("/generer", upload.single("fichier"), async (req, res) => {
 router.get("/", (req, res) => {
   const rows = db
     .prepare(
-      "SELECT id, titre, matiere, type_source, nom_fichier, created_at, synthese_json FROM syntheses ORDER BY created_at DESC"
+      "SELECT id, titre, type_source, nom_fichier, created_at, synthese_json FROM syntheses ORDER BY created_at DESC"
     )
     .all();
   res.json(rows.map((row) => ({ ...row, synthese: JSON.parse(row.synthese_json) })));
