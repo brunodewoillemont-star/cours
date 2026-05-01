@@ -32,10 +32,14 @@ const upload = multer({
   },
 });
 
-const SYSTEM_PROMPT = `Tu es un professeur de lycée expert en sciences (Physique-Chimie, SVT, etc.) qui prépare des élèves aux ECE du Baccalauréat français.
-Tu produis des corrections COMPLÈTES, DÉTAILLÉES et PÉDAGOGIQUES des sujets d'ECE.
-Réponds UNIQUEMENT avec un objet JSON valide, rien avant ni après, sans balises markdown.
-N'inclus JAMAIS le texte brut du sujet dans ta réponse. Corrige et explique uniquement.`;
+const SYSTEM_PROMPT = `Tu es un professeur de lycée expert en sciences (Physique-Chimie, SVT, etc.) spécialisé dans la préparation aux ECE du Baccalauréat français.
+Règles ABSOLUES :
+- Tu DOIS répondre à TOUTES les questions du sujet sans en sauter aucune, même si elles sont nombreuses.
+- Chaque réponse doit être LONGUE, COMPLÈTE et RÉDIGÉE comme un élève de terminale qui veut le maximum de points.
+- Cite les grandeurs, unités, formules, lois et raisonnements attendus par le correcteur.
+- Les astuces de manipulation doivent être concrètes et issues de la pratique réelle en laboratoire.
+- Réponds UNIQUEMENT avec un objet JSON valide, rien avant ni après.
+- N'inclus JAMAIS le texte brut du sujet dans ta réponse.`;
 
 const JSON_SCHEMA = `{
   "titre": "Titre du sujet ECE",
@@ -90,18 +94,23 @@ async function corrigerECE(contenu, typeSource, fichierPath, mimetype) {
       ],
     });
   } else {
-    const contenuTronque = contenu.length > 6000
-      ? contenu.slice(0, 6000) + "\n[... sujet tronqué ...]"
+    const contenuTronque = contenu.length > 8000
+      ? contenu.slice(0, 8000) + "\n[... sujet tronqué ...]"
       : contenu;
 
     response = await client.chat.completions.create({
       model: MODEL_TEXTE,
-      max_tokens: 4000,
+      max_tokens: 6000,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
           role: "user",
-          content: `Voici le sujet d'ECE à corriger :\n\n<sujet>\n${contenuTronque}\n</sujet>\n\nGénère une correction complète au format JSON strict. Réponds avec SEULEMENT ce JSON :\n${JSON_SCHEMA}`,
+          content: `Voici le sujet d'ECE complet à corriger :\n\n<sujet>\n${contenuTronque}\n</sujet>\n\nInstructions IMPORTANTES :
+1. Identifie TOUTES les questions du sujet (Q1, Q2, Q3, etc.) et réponds à CHACUNE sans exception.
+2. Chaque réponse doit être détaillée, avec les formules, calculs, raisonnements complets.
+3. Pour la manipulation, donne des astuces très concrètes issues du laboratoire.
+
+Génère la correction au format JSON strict suivant, réponds avec SEULEMENT ce JSON :\n${JSON_SCHEMA}`,
         },
       ],
     });
