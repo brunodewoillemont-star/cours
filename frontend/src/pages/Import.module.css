@@ -1,0 +1,171 @@
+.container { max-width: 720px; margin: 0 auto; }
+
+.hero { text-align: center; margin-bottom: 32px; }
+
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 1.05rem;
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  flex: 1;
+  padding: 14px;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+
+.tab:hover { background: var(--surface2); }
+
+.tabActive {
+  color: var(--primary);
+  background: var(--primary-light);
+  border-bottom: 2px solid var(--primary);
+}
+
+.form { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+
+.textarea {
+  width: 100%;
+  padding: 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface2);
+  resize: vertical;
+  transition: border-color 0.15s;
+  line-height: 1.6;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--surface);
+}
+
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 40px 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--surface2);
+}
+
+.dropzone:hover { border-color: var(--primary); background: var(--primary-light); }
+.dropzoneFilled { border-style: solid; border-color: var(--primary); background: var(--primary-light); padding: 20px 24px; }
+
+.dropzoneContent { text-align: center; }
+.dropzoneIcon { font-size: 2.5rem; display: block; margin-bottom: 12px; }
+.dropzoneText { font-weight: 500; color: var(--text); margin-bottom: 6px; }
+.link { color: var(--primary); }
+.dropzoneHint { font-size: 0.82rem; color: var(--text-muted); }
+
+.fileInfo { display: flex; align-items: center; gap: 16px; }
+.fileIcon { font-size: 2rem; flex-shrink: 0; }
+.fileName { font-weight: 600; color: var(--text); }
+.fileSize { font-size: 0.82rem; color: var(--text-muted); }
+.removeFile {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.removeFile:hover { background: var(--border); color: var(--danger); }
+
+.error {
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.submitBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 28px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.submitBtn:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-1px); }
+.submitBtn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+.spinner {
+  width: 18px; height: 18px;
+  border: 2.5px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.resultHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.backBtn {
+  background: none;
+  border: 1.5px solid var(--border);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+.backBtn:hover { border-color: var(--primary); color: var(--primary); }
+
+.saveBtn {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+.saveBtn:hover { background: var(--primary-hover); }
