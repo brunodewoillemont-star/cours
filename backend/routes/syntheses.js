@@ -42,7 +42,19 @@ const upload = multer({
 
 const SYSTEM_PROMPT = `Tu es un assistant pédagogique expert qui aide des lycéens à synthétiser leurs cours.
 Tu analyses le contenu d'un cours et tu produis une synthèse structurée, claire et facile à mémoriser.
-Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans balises de code, sans texte avant ou après.`;
+Tu réponds TOUJOURS avec un objet JSON valide. Tu peux l'entourer de \`\`\`json si tu veux, mais rien d'autre.`;
+
+// Extrait le JSON de la réponse même s'il est entouré de balises markdown
+function extractJSON(text) {
+  const clean = text.trim();
+  // Cas : ```json ... ```
+  const mdMatch = clean.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (mdMatch) return JSON.parse(mdMatch[1].trim());
+  // Cas : JSON brut
+  const objMatch = clean.match(/\{[\s\S]*\}/);
+  if (objMatch) return JSON.parse(objMatch[0]);
+  return JSON.parse(clean);
+}
 
 const JSON_SCHEMA = `{
   "titre": "Titre du chapitre détecté ou déduit",
@@ -84,8 +96,6 @@ async function genererSynthese(contenu, typeSource, fichierPath, mimetype) {
     response = await client.chat.completions.create({
       model: MODEL_TEXTE,
       max_tokens: 2000,
-      // response_format garantit du JSON pur (supporté par Groq)
-      response_format: { type: "json_object" },
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
@@ -97,7 +107,7 @@ async function genererSynthese(contenu, typeSource, fichierPath, mimetype) {
   }
 
   const raw = response.choices[0].message.content.trim();
-  return JSON.parse(raw);
+  return extractJSON(raw);
 }
 
 // POST /api/syntheses/generer
