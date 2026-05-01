@@ -40,10 +40,15 @@ const upload = multer({
   },
 });
 
-const SYSTEM_PROMPT = `Tu es un assistant pédagogique expert qui aide des lycéens à synthétiser leurs cours.
-Tu analyses le contenu d'un cours et tu produis une synthèse structurée, claire et facile à mémoriser.
-Tu réponds TOUJOURS avec UNIQUEMENT un objet JSON valide, rien d'autre avant ou après.
-N'inclus JAMAIS le contenu brut du cours dans ta réponse JSON. Synthétise uniquement.`;
+const SYSTEM_PROMPT = `Tu es un assistant pédagogique expert qui aide des lycéens de lycée à synthétiser leurs cours.
+Tu produis des synthèses DÉTAILLÉES, riches et complètes — pas des résumés minimalistes.
+Règles absolues :
+- Réponds UNIQUEMENT avec un objet JSON valide, rien avant ni après.
+- N'inclus JAMAIS le texte brut du cours dans ta réponse.
+- Sois généreux : au moins 6 idées principales, au moins 5 définitions si le cours en contient, un plan de révision en 5 étapes minimum.
+- Les idées principales doivent être des phrases complètes et explicatives, pas juste des titres.
+- Les définitions doivent être claires, précises, avec des exemples si possible.
+- Le résumé doit faire 5 à 8 phrases et couvrir tous les points importants.`;
 
 // Extrait le JSON de la réponse même s'il est entouré de balises markdown
 function extractJSON(text) {
@@ -58,12 +63,24 @@ function extractJSON(text) {
 }
 
 const JSON_SCHEMA = `{
-  "titre": "Titre du chapitre détecté ou déduit",
-  "matiere": "Matière probable (ex: Mathématiques, Histoire...)",
-  "idees_principales": ["idée 1", "idée 2", "idée 3"],
-  "definitions": [{"terme": "mot", "definition": "explication claire"}],
-  "plan_revision": ["Étape 1 : ...", "Étape 2 : ...", "Étape 3 : ..."],
-  "resume_court": "Un paragraphe de 3-4 phrases résumant l'essentiel du cours."
+  "titre": "Titre complet du chapitre",
+  "matiere": "Matière (ex: Mathématiques, Histoire-Géographie, Physique-Chimie, SVT, Philosophie...)",
+  "resume_court": "Résumé complet en 5 à 8 phrases couvrant tous les points importants du cours.",
+  "idees_principales": [
+    "Phrase complète expliquant la 1ère idée clé avec contexte",
+    "Phrase complète expliquant la 2ème idée clé avec contexte",
+    "... (au moins 6 idées)"
+  ],
+  "definitions": [
+    {"terme": "Terme 1", "definition": "Définition précise et claire, avec exemple si utile."},
+    {"terme": "Terme 2", "definition": "..."},
+    "... (toutes les définitions importantes du cours)"
+  ],
+  "plan_revision": [
+    "Étape 1 : Lire le résumé et identifier les concepts clés",
+    "Étape 2 : ...",
+    "... (5 étapes minimum, spécifiques au contenu du cours)"
+  ]
 }`;
 
 async function genererSynthese(contenu, typeSource, fichierPath, mimetype) {
