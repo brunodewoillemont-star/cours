@@ -29,4 +29,16 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS exercices_maths (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    titre TEXT NOT NULL,
+    chapitre TEXT,
+    difficulte TEXT,
+    type TEXT DEFAULT 'exercice',
+    exercice_json TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  )
+`);
+
 export default db;

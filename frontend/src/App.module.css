@@ -56,11 +56,10 @@
 }
 
 .navEce { font-weight: 600; }
+.activeEce { background: #d1fae5; color: #059669; }
 
-.activeEce {
-  background: #d1fae5;
-  color: #059669;
-}
+.navMath { font-weight: 600; }
+.activeMath { background: #ede9fe; color: #7c3aed; }
 
 .main {
   flex: 1;

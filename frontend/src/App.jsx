@@ -5,7 +5,12 @@ import Detail from "./pages/Detail.jsx";
 import ECE from "./pages/ECE.jsx";
 import MesECE from "./pages/MesECE.jsx";
 import DetailECE from "./pages/DetailECE.jsx";
+import Exercices from "./pages/Exercices.jsx";
+import MesExercices from "./pages/MesExercices.jsx";
+import DetailExercice from "./pages/DetailExercice.jsx";
 import styles from "./App.module.css";
+
+const nav = (base, active) => `${styles.navLink} ${base} ${active ? styles[base.split(" ")[1] || "active"] : ""}`;
 
 export default function App() {
   return (
@@ -15,16 +20,22 @@ export default function App() {
           <span className={styles.logo}>📚 SynthèseCours</span>
           <nav className={styles.nav}>
             <NavLink to="/" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ""}`} end>
-              Synthèse de cours
+              Cours
             </NavLink>
             <NavLink to="/mes-syntheses" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ""}`}>
               Mes synthèses
             </NavLink>
             <NavLink to="/ece" className={({ isActive }) => `${styles.navLink} ${styles.navEce} ${isActive ? styles.activeEce : ""}`} end>
-              🔬 ECE Bac
+              🔬 ECE
             </NavLink>
             <NavLink to="/mes-ece" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ""}`}>
-              Mes corrections
+              Corrections ECE
+            </NavLink>
+            <NavLink to="/exercices" className={({ isActive }) => `${styles.navLink} ${styles.navMath} ${isActive ? styles.activeMath : ""}`} end>
+              📐 Maths Bac
+            </NavLink>
+            <NavLink to="/mes-exercices" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ""}`}>
+              Mes exercices
             </NavLink>
           </nav>
         </div>
@@ -38,6 +49,9 @@ export default function App() {
           <Route path="/ece" element={<ECE />} />
           <Route path="/mes-ece" element={<MesECE />} />
           <Route path="/ece/:id" element={<DetailECE />} />
+          <Route path="/exercices" element={<Exercices />} />
+          <Route path="/mes-exercices" element={<MesExercices />} />
+          <Route path="/exercices/:id" element={<DetailExercice />} />
         </Routes>
       </main>
 

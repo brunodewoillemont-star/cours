@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import syntheseRoutes from "./routes/syntheses.js";
 import eceRoutes from "./routes/ece.js";
+import exercicesRoutes from "./routes/exercices.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -13,6 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/syntheses", syntheseRoutes);
 app.use("/api/ece", eceRoutes);
+app.use("/api/exercices", exercicesRoutes);
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
