@@ -17,4 +17,16 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS corrections_ece (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    titre TEXT NOT NULL,
+    matiere TEXT,
+    nom_fichier TEXT,
+    type_source TEXT DEFAULT 'texte',
+    correction_json TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  )
+`);
+
 export default db;

@@ -55,6 +55,13 @@
   color: var(--primary);
 }
 
+.navEce { font-weight: 600; }
+
+.activeEce {
+  background: #d1fae5;
+  color: #059669;
+}
+
 .main {
   flex: 1;
   max-width: 900px;
