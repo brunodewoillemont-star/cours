@@ -34,7 +34,7 @@ const upload = multer({
 
 const SYSTEM_PROMPT = `Tu es un professeur de lycée expert en sciences (Physique-Chimie, SVT, etc.) spécialisé dans la préparation aux ECE du Baccalauréat français.
 Règles ABSOLUES :
-- Tu DOIS répondre à TOUTES les questions du sujet sans en sauter aucune, même si elles sont nombreuses.
+- Tu DOIS répondre à TOUTES les questions du sujet sans en sauter aucune.
 - Chaque réponse doit être LONGUE, COMPLÈTE et RÉDIGÉE comme un élève de terminale qui veut le maximum de points.
 - Cite les grandeurs, unités, formules, lois et raisonnements attendus par le correcteur.
 - Les astuces de manipulation doivent être concrètes et issues de la pratique réelle en laboratoire.
@@ -54,13 +54,13 @@ const JSON_SCHEMA = `{
     }
   ],
   "manipulation": {
-    "protocole": ["Étape 1 : ...", "Étape 2 : ...", "..."],
-    "astuces": ["Astuce pratique 1", "Astuce 2", "..."],
-    "erreurs_courantes": ["Erreur fréquente à éviter 1", "Erreur 2", "..."],
-    "securite": ["Consigne de sécurité 1 si applicable", "..."]
+    "protocole": ["Étape 1 : ...", "Étape 2 : ..."],
+    "astuces": ["Astuce pratique 1", "Astuce 2"],
+    "erreurs_courantes": ["Erreur fréquente à éviter 1"],
+    "securite": ["Consigne de sécurité 1 si applicable"]
   },
-  "methode_generale": "Conseils méthodologiques pour aborder ce type d'ECE : comment lire le sujet, comment organiser son temps, comment rédiger les réponses.",
-  "mots_cles": ["mot-clé 1", "mot-clé 2", "..."]
+  "methode_generale": "Conseils méthodologiques pour aborder ce type d'ECE.",
+  "mots_cles": ["mot-clé 1", "mot-clé 2"]
 }`;
 
 function extractJSON(text) {
@@ -78,7 +78,6 @@ async function corrigerECE(contenu, typeSource, fichierPath, mimetype) {
   if (typeSource === "image" && fichierPath) {
     const imageData = readFileSync(fichierPath).toString("base64");
     const mediaType = mimetype || "image/jpeg";
-
     response = await client.chat.completions.create({
       model: MODEL_IMAGE,
       max_tokens: 4000,
@@ -88,29 +87,24 @@ async function corrigerECE(contenu, typeSource, fichierPath, mimetype) {
           role: "user",
           content: [
             { type: "image_url", image_url: { url: `data:${mediaType};base64,${imageData}` } },
-            { type: "text", text: `Corrige ce sujet d'ECE et génère une correction complète au format JSON strict :\n${JSON_SCHEMA}` },
+            { type: "text", text: `Corrige ce sujet d'ECE au format JSON strict :\n${JSON_SCHEMA}` },
           ],
         },
       ],
     });
   } else {
-    const contenuTronque = contenu.length > 8000
-      ? contenu.slice(0, 8000) + "\n[... sujet tronqué ...]"
+    const contenuTronque = contenu.length > 6000
+      ? contenu.slice(0, 6000) + "\n[... sujet tronqué ...]"
       : contenu;
 
     response = await client.chat.completions.create({
       model: MODEL_TEXTE,
-      max_tokens: 6000,
+      max_tokens: 4000,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
           role: "user",
-          content: `Voici le sujet d'ECE complet à corriger :\n\n<sujet>\n${contenuTronque}\n</sujet>\n\nInstructions IMPORTANTES :
-1. Identifie TOUTES les questions du sujet (Q1, Q2, Q3, etc.) et réponds à CHACUNE sans exception.
-2. Chaque réponse doit être détaillée, avec les formules, calculs, raisonnements complets.
-3. Pour la manipulation, donne des astuces très concrètes issues du laboratoire.
-
-Génère la correction au format JSON strict suivant, réponds avec SEULEMENT ce JSON :\n${JSON_SCHEMA}`,
+          content: `Voici le sujet d'ECE à corriger :\n\n<sujet>\n${contenuTronque}\n</sujet>\n\nInstructions : réponds à TOUTES les questions. Génère la correction au format JSON strict :\n${JSON_SCHEMA}`,
         },
       ],
     });
@@ -131,7 +125,6 @@ router.post("/corriger", upload.single("fichier"), async (req, res) => {
     if (req.file) {
       nomFichier = req.file.originalname;
       mimetype = req.file.mimetype;
-
       if (req.file.mimetype === "application/pdf") {
         typeSource = "pdf";
         const pdfParse = (await import("pdf-parse/lib/pdf-parse.js")).default;
@@ -149,41 +142,39 @@ router.post("/corriger", upload.single("fichier"), async (req, res) => {
 
     const correction = await corrigerECE(contenu, typeSource, req.file?.path, mimetype);
 
-    const result = db
-      .prepare(
-        `INSERT INTO corrections_ece (titre, matiere, nom_fichier, type_source, correction_json)
-         VALUES (?, ?, ?, ?, ?)`
-      )
-      .run(correction.titre, correction.matiere, nomFichier, typeSource, JSON.stringify(correction));
+    const result = await db.query(
+      `INSERT INTO corrections_ece (titre, matiere, nom_fichier, type_source, correction_json)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [correction.titre, correction.matiere, nomFichier, typeSource, JSON.stringify(correction)]
+    );
 
-    res.json({ id: result.lastInsertRowid, correction });
+    res.json({ id: result.rows[0].id, correction });
   } catch (err) {
     console.error(err);
-    if (err instanceof SyntaxError) {
-      return res.status(500).json({ error: "Réponse JSON invalide. Réessaie." });
-    }
+    if (err instanceof SyntaxError) return res.status(500).json({ error: "Réponse JSON invalide. Réessaie." });
     res.status(500).json({ error: err.message });
   }
 });
 
 // GET /api/ece
-router.get("/", (req, res) => {
-  const rows = db
-    .prepare("SELECT id, titre, matiere, type_source, nom_fichier, created_at, correction_json FROM corrections_ece ORDER BY created_at DESC")
-    .all();
-  res.json(rows.map((row) => ({ ...row, correction: JSON.parse(row.correction_json) })));
+router.get("/", async (req, res) => {
+  const result = await db.query(
+    "SELECT id, titre, matiere, type_source, nom_fichier, created_at, correction_json FROM corrections_ece ORDER BY created_at DESC"
+  );
+  res.json(result.rows.map((row) => ({ ...row, correction: JSON.parse(row.correction_json) })));
 });
 
 // GET /api/ece/:id
-router.get("/:id", (req, res) => {
-  const row = db.prepare("SELECT * FROM corrections_ece WHERE id = ?").get(req.params.id);
-  if (!row) return res.status(404).json({ error: "Correction introuvable." });
+router.get("/:id", async (req, res) => {
+  const result = await db.query("SELECT * FROM corrections_ece WHERE id = $1", [req.params.id]);
+  if (!result.rows[0]) return res.status(404).json({ error: "Correction introuvable." });
+  const row = result.rows[0];
   res.json({ ...row, correction: JSON.parse(row.correction_json) });
 });
 
 // DELETE /api/ece/:id
-router.delete("/:id", (req, res) => {
-  db.prepare("DELETE FROM corrections_ece WHERE id = ?").run(req.params.id);
+router.delete("/:id", async (req, res) => {
+  await db.query("DELETE FROM corrections_ece WHERE id = $1", [req.params.id]);
   res.json({ ok: true });
 });
 

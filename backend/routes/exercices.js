@@ -37,7 +37,6 @@ Règles ABSOLUES :
 - Les questions s'enchaînent logiquement.
 - Réponds UNIQUEMENT avec un objet JSON valide, rien avant ni après, pas de balises markdown.`;
 
-// Schéma simplifié — questions à plat (pas de sous_questions imbriquées)
 const SCHEMA = `{
   "titre": "Titre de l'exercice",
   "chapitre": "Chapitre",
@@ -123,13 +122,12 @@ async function genererExercice({ chapitre, difficulte, type }) {
     ? `Génère un sujet complet de Baccalauréat Terminale Générale option Mathématiques Expertes.
 3 exercices indépendants couvrant des chapitres variés. Total 20 pts. Niveau conforme au vrai Bac.
 Chaque exercice doit avoir 3 à 4 questions avec corrections complètes.
-Réponds UNIQUEMENT avec ce JSON (pas de texte autour) :\n${SCHEMA_SUJET}`
+Réponds UNIQUEMENT avec ce JSON :\n${SCHEMA_SUJET}`
     : `Génère un exercice de Terminale Générale option Mathématiques Expertes.
 Chapitre : ${chapitre}
 Difficulté : ${difficulte}
 4 à 5 questions progressives avec corrections détaillées.
-Les questions doivent s'enchaîner logiquement (résultats réutilisés).
-Réponds UNIQUEMENT avec ce JSON (pas de texte autour) :\n${SCHEMA}`;
+Réponds UNIQUEMENT avec ce JSON :\n${SCHEMA}`;
 
   const response = await client.chat.completions.create({
     model: MODEL,
@@ -155,20 +153,19 @@ router.post("/generer", async (req, res) => {
 
     const exercice = await genererExercice({ chapitre, difficulte, type });
 
-    const result = db
-      .prepare(
-        `INSERT INTO exercices_maths (titre, chapitre, difficulte, type, exercice_json)
-         VALUES (?, ?, ?, ?, ?)`
-      )
-      .run(
+    const result = await db.query(
+      `INSERT INTO exercices_maths (titre, chapitre, difficulte, type, exercice_json)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [
         exercice.titre,
         type === "sujet_complet" ? "Sujet complet" : chapitre,
         difficulte,
         type,
-        JSON.stringify(exercice)
-      );
+        JSON.stringify(exercice),
+      ]
+    );
 
-    res.json({ id: result.lastInsertRowid, exercice });
+    res.json({ id: result.rows[0].id, exercice });
   } catch (err) {
     console.error(err);
     if (err instanceof SyntaxError) return res.status(500).json({ error: "Réponse JSON invalide. Réessaie." });
@@ -180,23 +177,24 @@ router.post("/generer", async (req, res) => {
 router.get("/chapitres", (req, res) => res.json(CHAPITRES));
 
 // GET /api/exercices
-router.get("/", (req, res) => {
-  const rows = db
-    .prepare("SELECT id, titre, chapitre, difficulte, type, created_at FROM exercices_maths ORDER BY created_at DESC")
-    .all();
-  res.json(rows);
+router.get("/", async (req, res) => {
+  const result = await db.query(
+    "SELECT id, titre, chapitre, difficulte, type, created_at FROM exercices_maths ORDER BY created_at DESC"
+  );
+  res.json(result.rows);
 });
 
 // GET /api/exercices/:id
-router.get("/:id", (req, res) => {
-  const row = db.prepare("SELECT * FROM exercices_maths WHERE id = ?").get(req.params.id);
-  if (!row) return res.status(404).json({ error: "Exercice introuvable." });
+router.get("/:id", async (req, res) => {
+  const result = await db.query("SELECT * FROM exercices_maths WHERE id = $1", [req.params.id]);
+  if (!result.rows[0]) return res.status(404).json({ error: "Exercice introuvable." });
+  const row = result.rows[0];
   res.json({ ...row, exercice: JSON.parse(row.exercice_json) });
 });
 
 // DELETE /api/exercices/:id
-router.delete("/:id", (req, res) => {
-  db.prepare("DELETE FROM exercices_maths WHERE id = ?").run(req.params.id);
+router.delete("/:id", async (req, res) => {
+  await db.query("DELETE FROM exercices_maths WHERE id = $1", [req.params.id]);
   res.json({ ok: true });
 });
 
